@@ -94,14 +94,5 @@ jobs:
         run: echo "Validando aplicación desplegada..."
 
       - name: Activar nueva versión
-        run: echo "Nueva versión de GART GALLERY activa"
-
-  rollback:
-    name: Rollback
-    needs: deploy
-    if: failure()
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Restaurar versión anterior
-        run: echo "Rollback: restaurando versión estable anterior."
+        run: echo "Nueva versión de GART GALLERY activa"    
+  
