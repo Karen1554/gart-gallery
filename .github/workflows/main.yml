@@ -104,4 +104,4 @@ jobs:
 
     steps:
       - name: Restaurar versión anterior
-        run: echo "Rollback: restaurando versión estable anterior..."
+        run: echo "Rollback: restaurando versión estable anterior."
