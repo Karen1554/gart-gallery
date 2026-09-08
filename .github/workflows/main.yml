@@ -13,7 +13,6 @@ on:
 
 jobs:
 
-  # 1. BUILD Y PRUEBAS UNITARIAS
   build-and-test:
     name: Build y pruebas unitarias
     runs-on: ubuntu-latest
@@ -38,7 +37,6 @@ jobs:
         run: npm test
 
 
-  # 2. PRUEBAS DE INTEGRACIÓN
   integration:
     name: Pruebas de integración
     needs: build-and-test
@@ -61,7 +59,6 @@ jobs:
         run: npm run test:integration
 
 
-  # 3. AUDITORÍA LIGHTHOUSE
   lighthouse:
     name: Auditoría SEO y rendimiento
     needs: integration
@@ -80,8 +77,6 @@ jobs:
       - name: Ejecutar auditoría Lighthouse
         run: npm run lighthouse
 
-
-  # 4. DESPLIEGUE
   deploy:
     name: Despliegue a producción
     needs: lighthouse
@@ -101,8 +96,6 @@ jobs:
       - name: Activar nueva versión
         run: echo "Nueva versión de GART GALLERY activa"
 
-
-  # 5. ROLLBACK SI OCURRE UN ERROR
   rollback:
     name: Rollback
     needs: deploy
