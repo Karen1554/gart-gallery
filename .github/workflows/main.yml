@@ -1,0 +1,114 @@
+name: GART GALLERY - CI/CD
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+
+  pull_request:
+    branches:
+      - develop
+      - main
+
+jobs:
+
+  # 1. BUILD Y PRUEBAS UNITARIAS
+  build-and-test:
+    name: Build y pruebas unitarias
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Construir aplicación
+        run: npm run build
+
+      - name: Ejecutar pruebas unitarias
+        run: npm test
+
+
+  # 2. PRUEBAS DE INTEGRACIÓN
+  integration:
+    name: Pruebas de integración
+    needs: build-and-test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Ejecutar pruebas de integración
+        run: npm run test:integration
+
+
+  # 3. AUDITORÍA LIGHTHOUSE
+  lighthouse:
+    name: Auditoría SEO y rendimiento
+    needs: integration
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Construir aplicación
+        run: npm run build
+
+      - name: Ejecutar auditoría Lighthouse
+        run: npm run lighthouse
+
+
+  # 4. DESPLIEGUE
+  deploy:
+    name: Despliegue a producción
+    needs: lighthouse
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+
+      - name: Desplegar nueva versión
+        run: echo "Desplegando GART GALLERY..."
+
+      - name: Validar nueva versión
+        run: echo "Validando aplicación desplegada..."
+
+      - name: Activar nueva versión
+        run: echo "Nueva versión de GART GALLERY activa"
+
+
+  # 5. ROLLBACK SI OCURRE UN ERROR
+  rollback:
+    name: Rollback
+    needs: deploy
+    if: failure()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Restaurar versión anterior
+        run: echo "Rollback: restaurando versión estable anterior..."
