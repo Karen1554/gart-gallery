@@ -1,18 +1,16 @@
-import json
 import os
-import sqlite3
-from contextlib import contextmanager
 from pathlib import Path
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from db import connection
+from psycopg.types.json import Json
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 
 app = FastAPI(title="Gart Gallery Gallery Service", version="1.0.0")
-DB_PATH = os.getenv(
-    "DB_PATH",
-    str(Path(__file__).resolve().parent / "data" / "gallery.db"),
-)
 
 
 class Gallery(BaseModel):
@@ -46,27 +44,14 @@ class GalleryInput(BaseModel):
     active: bool = True
 
 
-@contextmanager
-def connection():
-    Path(DB_PATH).expanduser().parent.mkdir(parents=True, exist_ok=True)
-    db = sqlite3.connect(DB_PATH)
-    db.row_factory = sqlite3.Row
-    try:
-        yield db
-        db.commit()
-    except Exception:
-        db.rollback()
-        raise
-    finally:
-        db.close()
 
 
 def init_db() -> None:
     with connection() as db:
         db.execute(
             """
-            CREATE TABLE IF NOT EXISTS galleries (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+            CREATE TABLE IF NOT EXISTS gallery_galleries (
+                id SERIAL PRIMARY KEY,
                 name TEXT NOT NULL,
                 description TEXT NOT NULL DEFAULT '',
                 address TEXT NOT NULL DEFAULT '',
@@ -76,13 +61,13 @@ def init_db() -> None:
                 phone TEXT NOT NULL DEFAULT '',
                 email TEXT NOT NULL DEFAULT '',
                 image_url TEXT,
-                additional_images TEXT NOT NULL,
-                artist_ids TEXT NOT NULL,
-                active INTEGER NOT NULL DEFAULT 1
+                additional_images JSONB NOT NULL DEFAULT '[]'::jsonb,
+                artist_ids JSONB NOT NULL DEFAULT '[]'::jsonb,
+                active BOOLEAN NOT NULL DEFAULT TRUE
             )
             """
         )
-        if db.execute("SELECT COUNT(*) FROM galleries").fetchone()[0] == 0:
+        if db.execute("SELECT COUNT(*) AS count FROM gallery_galleries").fetchone()["count"] == 0:
             seed = [
                 Gallery(
                     id=1, name="GART Gallery", description="Arte contemporáneo colombiano.",
@@ -112,24 +97,28 @@ def init_db() -> None:
             ]
             db.executemany(
                 """
-                INSERT INTO galleries (
+                INSERT INTO gallery_galleries (
                     id, name, description, address, city, country, website, phone,
                     email, image_url, additional_images, artist_ids, active
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """,
                 [
                     (
                         gallery.id, gallery.name, gallery.description, gallery.address,
                         gallery.city, gallery.country, gallery.website, gallery.phone,
-                        gallery.email, gallery.image_url, json.dumps(gallery.additional_images),
-                        json.dumps(gallery.artist_ids), int(gallery.active),
+                        gallery.email, gallery.image_url, Json(gallery.additional_images),
+                        Json(gallery.artist_ids), gallery.active,
                     )
                     for gallery in seed
                 ],
             )
+            db.execute(
+                "SELECT setval(pg_get_serial_sequence('gallery_galleries', 'id'), "
+                "COALESCE(MAX(id), 1), true) FROM gallery_galleries"
+            )
 
 
-def gallery_from_row(row: sqlite3.Row) -> Gallery:
+def gallery_from_row(row: dict) -> Gallery:
     return Gallery(
         id=row["id"],
         name=row["name"],
@@ -141,30 +130,27 @@ def gallery_from_row(row: sqlite3.Row) -> Gallery:
         phone=row["phone"],
         email=row["email"],
         image_url=row["image_url"],
-        additional_images=json.loads(row["additional_images"]),
-        artist_ids=json.loads(row["artist_ids"]),
-        active=bool(row["active"]),
+        additional_images=row["additional_images"],
+        artist_ids=row["artist_ids"],
+        active=row["active"],
     )
 
 
-def save_gallery(db: sqlite3.Connection, gallery_id: int, payload: GalleryInput) -> None:
+def save_gallery(db, gallery_id: int, payload: GalleryInput) -> None:
     db.execute(
         """
-        UPDATE galleries SET name = ?, description = ?, address = ?, city = ?,
-            country = ?, website = ?, phone = ?, email = ?, image_url = ?,
-            additional_images = ?, artist_ids = ?, active = ?
-        WHERE id = ?
+        UPDATE gallery_galleries SET name = %s, description = %s, address = %s, city = %s,
+            country = %s, website = %s, phone = %s, email = %s, image_url = %s,
+            additional_images = %s, artist_ids = %s, active = %s
+        WHERE id = %s
         """,
         (
             payload.name, payload.description, payload.address, payload.city,
             payload.country, payload.website, payload.phone, payload.email,
-            payload.image_url, json.dumps(payload.additional_images),
-            json.dumps(payload.artist_ids), int(payload.active), gallery_id,
+            payload.image_url, Json(payload.additional_images),
+            Json(payload.artist_ids), payload.active, gallery_id,
         ),
     )
-
-
-init_db()
 
 
 @app.on_event("startup")
@@ -180,14 +166,14 @@ def health() -> dict[str, str]:
 @app.get("/api/galleries")
 def list_galleries() -> dict[str, list[Gallery]]:
     with connection() as db:
-        galleries = [gallery_from_row(row) for row in db.execute("SELECT * FROM galleries ORDER BY id")]
+        galleries = [gallery_from_row(row) for row in db.execute("SELECT * FROM gallery_galleries ORDER BY id")]
     return {"items": galleries}
 
 
 @app.get("/api/galleries/{gallery_id}", response_model=Gallery)
 def get_gallery(gallery_id: int) -> Gallery:
     with connection() as db:
-        row = db.execute("SELECT * FROM galleries WHERE id = ?", (gallery_id,)).fetchone()
+        row = db.execute("SELECT * FROM gallery_galleries WHERE id = %s", (gallery_id,)).fetchone()
     if row is None:
         raise HTTPException(status_code=404, detail="Gallery not found")
     return gallery_from_row(row)
@@ -198,26 +184,27 @@ def create_gallery(payload: GalleryInput) -> Gallery:
     with connection() as db:
         cursor = db.execute(
             """
-            INSERT INTO galleries (
+            INSERT INTO gallery_galleries (
                 name, description, address, city, country, website, phone, email,
                 image_url, additional_images, artist_ids, active
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING id
             """,
             (
                 payload.name, payload.description, payload.address, payload.city,
                 payload.country, payload.website, payload.phone, payload.email,
-                payload.image_url, json.dumps(payload.additional_images),
-                json.dumps(payload.artist_ids), int(payload.active),
+                payload.image_url, Json(payload.additional_images),
+                Json(payload.artist_ids), payload.active,
             ),
         )
-        gallery_id = cursor.lastrowid
+        gallery_id = cursor.fetchone()["id"]
     return Gallery(id=gallery_id, **payload.model_dump())
 
 
 @app.put("/api/galleries/{gallery_id}", response_model=Gallery)
 def update_gallery(gallery_id: int, payload: GalleryInput) -> Gallery:
     with connection() as db:
-        if db.execute("SELECT 1 FROM galleries WHERE id = ?", (gallery_id,)).fetchone() is None:
+        if db.execute("SELECT 1 FROM gallery_galleries WHERE id = %s", (gallery_id,)).fetchone() is None:
             raise HTTPException(status_code=404, detail="Gallery not found")
         save_gallery(db, gallery_id, payload)
     return Gallery(id=gallery_id, **payload.model_dump())

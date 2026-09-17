@@ -1,18 +1,16 @@
-import json
 import os
-import sqlite3
-from contextlib import contextmanager
 from pathlib import Path
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from db import connection
+from psycopg.types.json import Json
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 
 app = FastAPI(title="Gart Gallery Content Service", version="1.0.0")
-DB_PATH = os.getenv(
-    "DB_PATH",
-    str(Path(__file__).resolve().parent / "data" / "content.db"),
-)
 
 
 class Artist(BaseModel):
@@ -51,120 +49,108 @@ class ContentPageInput(BaseModel):
     published: bool = True
 
 
-@contextmanager
-def connection():
-    Path(DB_PATH).expanduser().parent.mkdir(parents=True, exist_ok=True)
-    db = sqlite3.connect(DB_PATH)
-    db.row_factory = sqlite3.Row
-    try:
-        yield db
-        db.commit()
-    except Exception:
-        db.rollback()
-        raise
-    finally:
-        db.close()
 
 
 def init_db() -> None:
     with connection() as db:
         db.execute(
             """
-            CREATE TABLE IF NOT EXISTS artists (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+            CREATE TABLE IF NOT EXISTS content_artists (
+                id SERIAL PRIMARY KEY,
                 name TEXT NOT NULL,
                 biography TEXT NOT NULL DEFAULT '',
                 image_url TEXT,
-                active INTEGER NOT NULL DEFAULT 1
+                active BOOLEAN NOT NULL DEFAULT TRUE
             )
             """
         )
         db.execute(
             """
-            CREATE TABLE IF NOT EXISTS pages (
+            CREATE TABLE IF NOT EXISTS content_pages (
                 slug TEXT PRIMARY KEY,
                 title TEXT NOT NULL,
                 body TEXT NOT NULL,
-                published INTEGER NOT NULL DEFAULT 1
+                published BOOLEAN NOT NULL DEFAULT TRUE
             )
             """
         )
         db.execute(
             """
-            CREATE TABLE IF NOT EXISTS landing (
+            CREATE TABLE IF NOT EXISTS content_landing (
                 id INTEGER PRIMARY KEY CHECK (id = 1),
                 title TEXT NOT NULL,
                 subtitle TEXT NOT NULL DEFAULT '',
                 hero_image_url TEXT,
-                featured_work_ids TEXT NOT NULL
+                featured_work_ids JSONB NOT NULL DEFAULT '[]'::jsonb
             )
             """
         )
-        if db.execute("SELECT COUNT(*) FROM artists").fetchone()[0] == 0:
+        if db.execute("SELECT COUNT(*) AS count FROM content_artists").fetchone()["count"] == 0:
             db.executemany(
                 """
-                INSERT INTO artists (id, name, biography, image_url, active)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO content_artists (id, name, biography, image_url, active)
+                VALUES (%s, %s, %s, %s, %s)
                 """,
                 [
-                    (1, "Laura Méndez", "Pinta paisajes de memoria y territorio.", None, 1),
-                    (2, "Carlos Pérez", "Explora el color desde la abstracción.", None, 1),
-                    (3, "Ana Torres", "Crea composiciones llenas de luz.", None, 1),
-                    (4, "Miguel Ángel", "Retrata viajes, montañas y horizontes.", None, 1),
+                    (1, "Laura Méndez", "Pinta paisajes de memoria y territorio.", None, True),
+                    (2, "Carlos Pérez", "Explora el color desde la abstracción.", None, True),
+                    (3, "Ana Torres", "Crea composiciones llenas de luz.", None, True),
+                    (4, "Miguel Ángel", "Retrata viajes, montañas y horizontes.", None, True),
                 ],
             )
-        if db.execute("SELECT COUNT(*) FROM pages").fetchone()[0] == 0:
+            db.execute(
+                "SELECT setval(pg_get_serial_sequence('content_artists', 'id'), "
+                "COALESCE(MAX(id), 1), true) FROM content_artists"
+            )
+        if db.execute("SELECT COUNT(*) AS count FROM content_pages").fetchone()["count"] == 0:
             db.executemany(
-                "INSERT INTO pages (slug, title, body, published) VALUES (?, ?, ?, 1)",
+                "INSERT INTO content_pages (slug, title, body, published) VALUES (%s, %s, %s, TRUE)",
                 [
                     ("about", "Sobre GART Gallery", "Un espacio para descubrir arte, artistas y galerías."),
                     ("contact", "Contacto", "Escríbenos para conocer nuestras obras y exposiciones."),
                 ],
             )
-        if db.execute("SELECT COUNT(*) FROM landing").fetchone()[0] == 0:
+        if db.execute("SELECT COUNT(*) AS count FROM content_landing").fetchone()["count"] == 0:
             db.execute(
                 """
-                INSERT INTO landing (id, title, subtitle, hero_image_url, featured_work_ids)
-                VALUES (1, ?, ?, ?, ?)
+                INSERT INTO content_landing (id, title, subtitle, hero_image_url, featured_work_ids)
+                VALUES (1, %s, %s, %s, %s)
                 """,
                 (
                     "Arte que inspira, espacios que conectan.",
                     "Descubre obras únicas de artistas increíbles en nuestras galerías.",
                     None,
-                    json.dumps([1, 2, 3, 4]),
+                    Json([1, 2, 3, 4]),
                 ),
             )
 
 
-def artist_from_row(row: sqlite3.Row) -> Artist:
+def artist_from_row(row: dict) -> Artist:
     return Artist(
         id=row["id"],
         name=row["name"],
         biography=row["biography"],
         image_url=row["image_url"],
-        active=bool(row["active"]),
+        active=row["active"],
     )
 
 
-def page_from_row(row: sqlite3.Row) -> ContentPage:
+def page_from_row(row: dict) -> ContentPage:
     return ContentPage(
         slug=row["slug"],
         title=row["title"],
         body=row["body"],
-        published=bool(row["published"]),
+        published=row["published"],
     )
 
 
-def landing_from_row(row: sqlite3.Row) -> LandingContent:
+def landing_from_row(row: dict) -> LandingContent:
     return LandingContent(
         title=row["title"],
         subtitle=row["subtitle"],
         hero_image_url=row["hero_image_url"],
-        featured_work_ids=json.loads(row["featured_work_ids"]),
+        featured_work_ids=row["featured_work_ids"],
     )
-
-
-init_db()
 
 
 @app.on_event("startup")
@@ -180,23 +166,23 @@ def health() -> dict[str, str]:
 @app.get("/api/content")
 def content() -> dict[str, object]:
     with connection() as db:
-        landing = landing_from_row(db.execute("SELECT * FROM landing WHERE id = 1").fetchone())
-        pages = [page_from_row(row) for row in db.execute("SELECT * FROM pages ORDER BY rowid")]
-        artists = [artist_from_row(row) for row in db.execute("SELECT * FROM artists ORDER BY id")]
+        landing = landing_from_row(db.execute("SELECT * FROM content_landing WHERE id = 1").fetchone())
+        pages = [page_from_row(row) for row in db.execute("SELECT * FROM content_pages ORDER BY slug")]
+        artists = [artist_from_row(row) for row in db.execute("SELECT * FROM content_artists ORDER BY id")]
     return {"landing": landing, "pages": pages, "artists": artists}
 
 
 @app.get("/api/content/landing", response_model=LandingContent)
 def get_landing() -> LandingContent:
     with connection() as db:
-        row = db.execute("SELECT * FROM landing WHERE id = 1").fetchone()
+        row = db.execute("SELECT * FROM content_landing WHERE id = 1").fetchone()
     return landing_from_row(row)
 
 
 @app.get("/api/content/pages/{slug}", response_model=ContentPage)
 def get_page(slug: str) -> ContentPage:
     with connection() as db:
-        row = db.execute("SELECT * FROM pages WHERE slug = ?", (slug,)).fetchone()
+        row = db.execute("SELECT * FROM content_pages WHERE slug = %s", (slug,)).fetchone()
     if row is None:
         raise HTTPException(status_code=404, detail="Content page not found")
     return page_from_row(row)
@@ -208,12 +194,12 @@ def create_page(payload: ContentPageInput) -> ContentPage:
     with connection() as db:
         db.execute(
             """
-            INSERT INTO pages (slug, title, body, published)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO content_pages (slug, title, body, published)
+            VALUES (%s, %s, %s, %s)
             ON CONFLICT(slug) DO UPDATE SET
                 title = excluded.title, body = excluded.body, published = excluded.published
             """,
-            (page.slug, page.title, page.body, int(page.published)),
+            (page.slug, page.title, page.body, page.published),
         )
     return page
 
@@ -221,14 +207,14 @@ def create_page(payload: ContentPageInput) -> ContentPage:
 @app.get("/api/artists")
 def list_artists() -> dict[str, list[Artist]]:
     with connection() as db:
-        artists = [artist_from_row(row) for row in db.execute("SELECT * FROM artists ORDER BY id")]
+        artists = [artist_from_row(row) for row in db.execute("SELECT * FROM content_artists ORDER BY id")]
     return {"items": artists}
 
 
 @app.get("/api/artists/{artist_id}", response_model=Artist)
 def get_artist(artist_id: int) -> Artist:
     with connection() as db:
-        row = db.execute("SELECT * FROM artists WHERE id = ?", (artist_id,)).fetchone()
+        row = db.execute("SELECT * FROM content_artists WHERE id = %s", (artist_id,)).fetchone()
     if row is None:
         raise HTTPException(status_code=404, detail="Artist not found")
     return artist_from_row(row)
@@ -238,24 +224,24 @@ def get_artist(artist_id: int) -> Artist:
 def create_artist(payload: ArtistInput) -> Artist:
     with connection() as db:
         cursor = db.execute(
-            "INSERT INTO artists (name, biography, image_url, active) VALUES (?, ?, ?, ?)",
-            (payload.name, payload.biography, payload.image_url, int(payload.active)),
+            "INSERT INTO content_artists (name, biography, image_url, active) VALUES (%s, %s, %s, %s) RETURNING id",
+            (payload.name, payload.biography, payload.image_url, payload.active),
         )
-        artist_id = cursor.lastrowid
+        artist_id = cursor.fetchone()["id"]
     return Artist(id=artist_id, **payload.model_dump())
 
 
 @app.put("/api/artists/{artist_id}", response_model=Artist)
 def update_artist(artist_id: int, payload: ArtistInput) -> Artist:
     with connection() as db:
-        if db.execute("SELECT 1 FROM artists WHERE id = ?", (artist_id,)).fetchone() is None:
+        if db.execute("SELECT 1 FROM content_artists WHERE id = %s", (artist_id,)).fetchone() is None:
             raise HTTPException(status_code=404, detail="Artist not found")
         db.execute(
             """
-            UPDATE artists SET name = ?, biography = ?, image_url = ?, active = ?
-            WHERE id = ?
+            UPDATE content_artists SET name = %s, biography = %s, image_url = %s, active = %s
+            WHERE id = %s
             """,
-            (payload.name, payload.biography, payload.image_url, int(payload.active), artist_id),
+            (payload.name, payload.biography, payload.image_url, payload.active, artist_id),
         )
     return Artist(id=artist_id, **payload.model_dump())
 

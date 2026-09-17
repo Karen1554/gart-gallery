@@ -29,23 +29,24 @@ Every service exposes `GET /health`.
 
 ## Database ownership and configuration
 
-Each service owns an independent SQLite database and never reads another
-service's database directly. By default the files are created under the
-service's `data` directory:
+All services use the PostgreSQL database in `DATABASE_URL`; no service reads
+another service's tables. Each service creates and seeds only its own tables:
 
-| Service | Default database |
+| Service | PostgreSQL tables |
 | --- | --- |
-| Gallery | `services/gallery-service/data/gallery.db` |
-| Works | `services/works-service/data/works.db` |
-| Auth | `services/auth-service/data/auth.db` |
-| Purchase | `services/purchase-service/data/purchase.db` |
-| Content | `services/content-service/data/content.db` |
+| Gallery | `gallery_galleries` |
+| Works | `works_works` |
+| Auth | `auth_users`, `auth_sessions` |
+| Purchase | `purchase_carts`, `purchase_purchases` |
+| Content | `content_artists`, `content_pages`, `content_landing` |
 
-Set `DB_PATH` to override the database location for an individual service.
-The schemas and seed records are initialized on startup, and seed data is
-inserted only when its table is empty. Lists are stored as JSON and timestamps
-as ISO strings. Auth also stores users and active bearer sessions, so data,
-cart contents, purchases, and login sessions survive service restarts.
+Set `DATABASE_URL` for every service. `ENVIRONMENT=production` fails clearly
+when it is missing. For local development only, the helper uses the explicit
+PostgreSQL default `postgresql://postgres:postgres@localhost:5432/gart_gallery`;
+start that PostgreSQL database first. The schemas and seed records are
+initialized on startup, and seed data is inserted only when its table is empty.
+JSON list fields are stored as PostgreSQL `JSONB`. Auth stores users and active
+bearer sessions, so data, carts, purchases, and sessions survive restarts.
 
 ## Local setup
 
@@ -56,6 +57,9 @@ python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r services\requirements.txt
 ```
+
+Copy `.env.example` to `.env` and set `DATABASE_URL` to your local PostgreSQL
+connection string (or use the documented development default).
 
 Run a service from the repository root:
 

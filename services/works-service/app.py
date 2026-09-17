@@ -1,18 +1,16 @@
 import os
-import sqlite3
-from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from db import connection
 
 from fastapi import FastAPI, HTTPException, Query, status
 from pydantic import BaseModel, Field
 
 
 app = FastAPI(title="Gart Gallery Works Service", version="1.0.0")
-DB_PATH = os.getenv(
-    "DB_PATH",
-    str(Path(__file__).resolve().parent / "data" / "works.db"),
-)
 
 
 class Work(BaseModel):
@@ -43,27 +41,14 @@ class WorkInput(BaseModel):
     moderation_status: str = "published"
 
 
-@contextmanager
-def connection():
-    Path(DB_PATH).expanduser().parent.mkdir(parents=True, exist_ok=True)
-    db = sqlite3.connect(DB_PATH)
-    db.row_factory = sqlite3.Row
-    try:
-        yield db
-        db.commit()
-    except Exception:
-        db.rollback()
-        raise
-    finally:
-        db.close()
 
 
 def init_db() -> None:
     with connection() as db:
         db.execute(
             """
-            CREATE TABLE IF NOT EXISTS works (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+            CREATE TABLE IF NOT EXISTS works_works (
+                id SERIAL PRIMARY KEY,
                 title TEXT NOT NULL,
                 description TEXT NOT NULL DEFAULT '',
                 year TEXT NOT NULL DEFAULT '',
@@ -71,14 +56,14 @@ def init_db() -> None:
                 image_url TEXT,
                 artist_id INTEGER,
                 gallery_id INTEGER,
-                available INTEGER NOT NULL DEFAULT 1,
+                available BOOLEAN NOT NULL DEFAULT TRUE,
                 price REAL,
                 moderation_status TEXT NOT NULL DEFAULT 'published',
-                created_at TEXT NOT NULL
+                created_at TIMESTAMPTZ NOT NULL
             )
             """
         )
-        if db.execute("SELECT COUNT(*) FROM works").fetchone()[0] == 0:
+        if db.execute("SELECT COUNT(*) AS count FROM works_works").fetchone()["count"] == 0:
             seed = [
                 Work(
                     id=1, title="Reflejos del alma", description="Una exploración de luz y memoria.",
@@ -111,23 +96,27 @@ def init_db() -> None:
             ]
             db.executemany(
                 """
-                INSERT INTO works (
+                INSERT INTO works_works (
                     id, title, description, year, category, image_url, artist_id,
                     gallery_id, available, price, moderation_status, created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """,
                 [
                     (
                         work.id, work.title, work.description, work.year, work.category,
-                        work.image_url, work.artist_id, work.gallery_id, int(work.available),
+                        work.image_url, work.artist_id, work.gallery_id, work.available,
                         work.price, work.moderation_status, work.created_at.isoformat(),
                     )
                     for work in seed
                 ],
             )
+            db.execute(
+                "SELECT setval(pg_get_serial_sequence('works_works', 'id'), "
+                "COALESCE(MAX(id), 1), true) FROM works_works"
+            )
 
 
-def work_from_row(row: sqlite3.Row) -> Work:
+def work_from_row(row: dict) -> Work:
     return Work(
         id=row["id"],
         title=row["title"],
@@ -137,22 +126,22 @@ def work_from_row(row: sqlite3.Row) -> Work:
         image_url=row["image_url"],
         artist_id=row["artist_id"],
         gallery_id=row["gallery_id"],
-        available=bool(row["available"]),
+        available=row["available"],
         price=row["price"],
         moderation_status=row["moderation_status"],
-        created_at=datetime.fromisoformat(row["created_at"]),
+        created_at=(
+            datetime.fromisoformat(row["created_at"])
+            if isinstance(row["created_at"], str) else row["created_at"]
+        ),
     )
 
 
 def update_values(payload: WorkInput) -> tuple[object, ...]:
     return (
         payload.title, payload.description, payload.year, payload.category,
-        payload.image_url, payload.artist_id, payload.gallery_id, int(payload.available),
+        payload.image_url, payload.artist_id, payload.gallery_id, payload.available,
         payload.price, payload.moderation_status,
     )
-
-
-init_db()
 
 
 @app.on_event("startup")
@@ -173,7 +162,7 @@ def list_works(
     limit: int = Query(default=6, ge=1, le=50),
 ) -> dict[str, object]:
     with connection() as db:
-        works = [work_from_row(row) for row in db.execute("SELECT * FROM works")]
+        works = [work_from_row(row) for row in db.execute("SELECT * FROM works_works")]
     query = q.strip().lower()
     filtered = [
         work for work in works
@@ -197,7 +186,7 @@ def list_works(
 @app.get("/api/works/{work_id}", response_model=Work)
 def get_work(work_id: int) -> Work:
     with connection() as db:
-        row = db.execute("SELECT * FROM works WHERE id = ?", (work_id,)).fetchone()
+        row = db.execute("SELECT * FROM works_works WHERE id = %s", (work_id,)).fetchone()
     if row is None:
         raise HTTPException(status_code=404, detail="Work not found")
     return work_from_row(row)
@@ -209,40 +198,44 @@ def create_work(payload: WorkInput) -> Work:
     with connection() as db:
         cursor = db.execute(
             """
-            INSERT INTO works (
+            INSERT INTO works_works (
                 title, description, year, category, image_url, artist_id, gallery_id,
                 available, price, moderation_status, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING id
             """,
             (*update_values(payload), created_at.isoformat()),
         )
-        work_id = cursor.lastrowid
+        work_id = cursor.fetchone()["id"]
     return Work(id=work_id, created_at=created_at, **payload.model_dump())
 
 
 @app.put("/api/works/{work_id}", response_model=Work)
 def update_work(work_id: int, payload: WorkInput) -> Work:
     with connection() as db:
-        row = db.execute("SELECT created_at FROM works WHERE id = ?", (work_id,)).fetchone()
+        row = db.execute("SELECT created_at FROM works_works WHERE id = %s", (work_id,)).fetchone()
         if row is None:
             raise HTTPException(status_code=404, detail="Work not found")
         db.execute(
             """
-            UPDATE works SET title = ?, description = ?, year = ?, category = ?,
-                image_url = ?, artist_id = ?, gallery_id = ?, available = ?,
-                price = ?, moderation_status = ?
-            WHERE id = ?
+            UPDATE works_works SET title = %s, description = %s, year = %s, category = %s,
+                image_url = %s, artist_id = %s, gallery_id = %s, available = %s,
+                price = %s, moderation_status = %s
+            WHERE id = %s
             """,
             (*update_values(payload), work_id),
         )
-        created_at = datetime.fromisoformat(row["created_at"])
+        created_at = (
+            datetime.fromisoformat(row["created_at"])
+            if isinstance(row["created_at"], str) else row["created_at"]
+        )
     return Work(id=work_id, created_at=created_at, **payload.model_dump())
 
 
 @app.delete("/api/works/{work_id}")
 def delete_work(work_id: int) -> dict[str, bool]:
     with connection() as db:
-        cursor = db.execute("DELETE FROM works WHERE id = ?", (work_id,))
+        cursor = db.execute("DELETE FROM works_works WHERE id = %s", (work_id,))
     if cursor.rowcount == 0:
         raise HTTPException(status_code=404, detail="Work not found")
     return {"ok": True}
@@ -251,14 +244,14 @@ def delete_work(work_id: int) -> dict[str, bool]:
 @app.patch("/api/works/{work_id}/moderation", response_model=Work)
 def moderate_work(work_id: int, moderation_status: str = Query(..., pattern="^(draft|pending|published|rejected)$")) -> Work:
     with connection() as db:
-        row = db.execute("SELECT * FROM works WHERE id = ?", (work_id,)).fetchone()
+        row = db.execute("SELECT * FROM works_works WHERE id = %s", (work_id,)).fetchone()
         if row is None:
             raise HTTPException(status_code=404, detail="Work not found")
         db.execute(
-            "UPDATE works SET moderation_status = ? WHERE id = ?",
+            "UPDATE works_works SET moderation_status = %s WHERE id = %s",
             (moderation_status, work_id),
         )
-        row = db.execute("SELECT * FROM works WHERE id = ?", (work_id,)).fetchone()
+        row = db.execute("SELECT * FROM works_works WHERE id = %s", (work_id,)).fetchone()
     return work_from_row(row)
 
 

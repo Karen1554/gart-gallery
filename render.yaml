@@ -5,10 +5,6 @@ services:
     plan: free
     buildCommand: npm install
     startCommand: npm start
-    disk:
-      name: gart-gallery-data
-      mountPath: /var/data
-      sizeGB: 1
     envVars:
       - key: NODE_VERSION
         value: 20
@@ -18,16 +14,86 @@ services:
         fromDatabase:
           name: gart-gallery-db
           property: connectionString
-      - key: DB_PATH
-        value: /var/data/gallery.db
-      - key: UPLOADS_DIR
-        value: /var/data/uploads
       - key: ADMIN_USER
         value: admin
       - key: SESSION_SECRET
         sync: false
       - key: ADMIN_PASSWORD
         sync: false
+
+  - type: web
+    name: gart-gallery-gallery
+    env: python
+    plan: free
+    buildCommand: pip install -r services/requirements.txt
+    startCommand: PYTHONPATH=services uvicorn --app-dir services/gallery-service app:app --host 0.0.0.0 --port 3001
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: gart-gallery-db
+          property: connectionString
+      - key: ENVIRONMENT
+        value: production
+
+  - type: web
+    name: gart-gallery-works
+    env: python
+    plan: free
+    buildCommand: pip install -r services/requirements.txt
+    startCommand: PYTHONPATH=services uvicorn --app-dir services/works-service app:app --host 0.0.0.0 --port 3002
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: gart-gallery-db
+          property: connectionString
+      - key: ENVIRONMENT
+        value: production
+
+  - type: web
+    name: gart-gallery-auth
+    env: python
+    plan: free
+    buildCommand: pip install -r services/requirements.txt
+    startCommand: PYTHONPATH=services uvicorn --app-dir services/auth-service app:app --host 0.0.0.0 --port 3003
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: gart-gallery-db
+          property: connectionString
+      - key: ENVIRONMENT
+        value: production
+      - key: ADMIN_USER
+        value: admin
+      - key: ADMIN_PASSWORD
+        sync: false
+
+  - type: web
+    name: gart-gallery-purchase
+    env: python
+    plan: free
+    buildCommand: pip install -r services/requirements.txt
+    startCommand: PYTHONPATH=services uvicorn --app-dir services/purchase-service app:app --host 0.0.0.0 --port 3004
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: gart-gallery-db
+          property: connectionString
+      - key: ENVIRONMENT
+        value: production
+
+  - type: web
+    name: gart-gallery-content
+    env: python
+    plan: free
+    buildCommand: pip install -r services/requirements.txt
+    startCommand: PYTHONPATH=services uvicorn --app-dir services/content-service app:app --host 0.0.0.0 --port 3005
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: gart-gallery-db
+          property: connectionString
+      - key: ENVIRONMENT
+        value: production
 
 databases:
   - name: gart-gallery-db

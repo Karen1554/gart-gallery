@@ -3,8 +3,5 @@ dist/
 .astro/
 .env
 .env.astro
-data/*.db
-data/*.db-*
 services/*/__pycache__/
-services/*/data/*.db
-services/*/data/*.db-*
+services/__pycache__/
