@@ -1,0 +1,21 @@
+---
+import MainLayout from '../../layouts/MainLayout.astro';
+const gateway = import.meta.env.PUBLIC_API_GATEWAY_URL || 'http://localhost:3000';
+export function getStaticPaths() {
+  return [1, 2, 3, 4].map((id) => ({ params: { id: String(id) } }));
+}
+const { id } = Astro.params;
+---
+<MainLayout title="Detalle de obra">
+  <section class="page">
+    <p class="eyebrow">COLECCIÓN GART</p>
+    <div class="detail-layout" id="work-detail"><p>Cargando obra...</p></div>
+  </section>
+</MainLayout>
+<script define:vars={{ gateway, id }}>
+  const detail = document.querySelector('#work-detail');
+  const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[c]));
+  fetch(`${gateway}/api/works/${encodeURIComponent(id)}`).then((response) => response.ok ? response.json() : Promise.reject()).then((work) => {
+    detail.innerHTML = `<div class="detail-image"><img src="${escapeHtml(work.image_url || 'https://images.unsplash.com/photo-1549490349-8643362247b5?auto=format&fit=crop&w=1000&q=85')}" alt="${escapeHtml(work.title)}" /></div><div class="detail-info"><p class="eyebrow">${escapeHtml(work.category)}</p><h2>${escapeHtml(work.title)}</h2><p>${escapeHtml(work.description)}</p><div class="detail-meta"><div><small>Año</small><strong>${escapeHtml(work.year || 'No especificado')}</strong></div><div><small>Disponibilidad</small><strong>${work.available ? 'Disponible' : 'Vendida'}</strong></div><div><small>Artista</small><strong>${work.artist_id ? `Artista #${work.artist_id}` : 'Por confirmar'}</strong></div><div><small>Precio</small><strong>${work.price == null ? 'Consultar' : `$ ${Number(work.price).toLocaleString('es-CO')}`}</strong></div></div><a class="button" href="/cart?work=${encodeURIComponent(work.id)}">Agregar al carrito</a></div>`;
+  }).catch(() => { detail.innerHTML = '<div class="card"><h2>Obra no encontrada</h2><p>La obra que buscas no está disponible.</p><a class="button" href="/works">Volver a obras</a></div>'; });
+</script>

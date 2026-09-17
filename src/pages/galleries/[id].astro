@@ -1,0 +1,32 @@
+---
+import MainLayout from '../../layouts/MainLayout.astro';
+const gateway = import.meta.env.PUBLIC_API_GATEWAY_URL || 'http://localhost:3000';
+export function getStaticPaths() {
+  return [1, 2, 3, 4].map((id) => ({ params: { id: String(id) } }));
+}
+const { id } = Astro.params;
+---
+<MainLayout title="Detalle de galería">
+  <section class="page">
+    <p class="eyebrow">ESPACIO DE ARTE</p>
+    <div id="gallery-detail"><p>Cargando galería...</p></div>
+  </section>
+</MainLayout>
+<script define:vars={{ gateway, id }}>
+  const detail = document.querySelector('#gallery-detail');
+  const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[c]));
+  const imageFallback = 'https://images.unsplash.com/photo-1561214115-f2f134cc4912?auto=format&fit=crop&w=1200&q=85';
+  async function loadGallery() {
+    const galleryResponse = await fetch(`${gateway}/api/galleries/${encodeURIComponent(id)}`);
+    if (!galleryResponse.ok) throw new Error('Gallery not found');
+    const gallery = await galleryResponse.json();
+    const [artistsResponse, worksResponse] = await Promise.all([
+      fetch(`${gateway}/api/artists`),
+      fetch(`${gateway}/api/works?limit=50`),
+    ]);
+    const artists = artistsResponse.ok ? (await artistsResponse.json()).items.filter((artist) => gallery.artist_ids.includes(artist.id)) : [];
+    const works = worksResponse.ok ? (await worksResponse.json()).items.filter((work) => work.gallery_id === gallery.id) : [];
+    detail.innerHTML = `<div class="detail-image"><img src="${escapeHtml(gallery.image_url || imageFallback)}" alt="${escapeHtml(gallery.name)}" /></div><div class="detail-info"><h1>${escapeHtml(gallery.name)}</h1><p>${escapeHtml(gallery.description)}</p><div class="detail-meta"><div><small>Dirección</small><strong>${escapeHtml(gallery.address || 'No disponible')}</strong></div><div><small>Ciudad</small><strong>${escapeHtml([gallery.city, gallery.country].filter(Boolean).join(', '))}</strong></div><div><small>Teléfono</small><strong>${escapeHtml(gallery.phone || 'No disponible')}</strong></div><div><small>Correo</small><strong>${escapeHtml(gallery.email || 'No disponible')}</strong></div></div>${gallery.website ? `<a class="button" href="${escapeHtml(gallery.website)}" target="_blank" rel="noreferrer">Visitar sitio web</a>` : ''}</div><section class="detail-section"><p class="eyebrow">ARTISTAS</p><h2>Artistas de esta galería</h2><div class="cards">${artists.length ? artists.map((artist) => `<article class="card"><h2>${escapeHtml(artist.name)}</h2><p>${escapeHtml(artist.biography)}</p><a class="button" href="/works?artist=${artist.id}">Ver obras</a></article>`).join('') : '<p>No hay artistas asociados.</p>'}</div></section><section class="detail-section"><p class="eyebrow">CATÁLOGO</p><h2>Obras de esta galería</h2><div class="work-catalog">${works.length ? works.map((work) => `<article class="work-tile"><a href="/works/${work.id}"><div class="work-tile-image"><img src="${escapeHtml(work.image_url || imageFallback)}" alt="${escapeHtml(work.title)}" /></div><div class="work-tile-body"><h2>${escapeHtml(work.title)}</h2><p>${escapeHtml(work.category)} · ${escapeHtml(work.year)}</p><span class="button">Ver obra</span></div></a></article>`).join('') : '<p>No hay obras asociadas.</p>'}</div></section>`;
+  }
+  loadGallery().catch(() => { detail.innerHTML = '<div class="card"><h2>Galería no encontrada</h2><p>La galería que buscas no está disponible.</p><a class="button" href="/galleries">Volver a galerías</a></div>'; });
+</script>

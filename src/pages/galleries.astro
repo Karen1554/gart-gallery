@@ -1,0 +1,9 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+const gateway = import.meta.env.PUBLIC_API_GATEWAY_URL || 'http://localhost:3000';
+---
+<MainLayout title="Galerías"><section class="page"><p class="eyebrow">ESPACIOS DE ARTE</p><h1>Galerías</h1><p class="intro">Conoce los espacios que representan a nuestros artistas.</p><div class="cards" id="gallery-list"><p>Cargando galerías...</p></div></section></MainLayout>
+<script define:vars={{ gateway }}>
+  const list = document.querySelector('#gallery-list');
+  fetch(`${gateway}/api/galleries`).then((response) => response.ok ? response.json() : Promise.reject()).then((data) => { list.innerHTML = data.items.map((gallery) => `<article class="card"><h2>${gallery.name}</h2><p>${[gallery.city, gallery.country].filter(Boolean).join(', ')}</p><p>${gallery.description}</p><small>${gallery.artist_ids.length} artistas relacionados</small><br /><a class="button" href="/galleries/${gallery.id}">Ver galería</a></article>`).join(''); }).catch(() => { list.innerHTML = '<p>No se pudieron cargar las galerías.</p>'; });
+</script>

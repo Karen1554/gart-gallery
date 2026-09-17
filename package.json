@@ -5,6 +5,9 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
+    "astro:dev": "astro dev",
+    "astro:build": "astro build",
+    "astro:preview": "astro preview",
     "test": "echo \"No tests configured\""
   },
   "engines": {
@@ -18,8 +21,12 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "express-session": "^1.19.0",
+    "http-proxy-middleware": "^4.2.0",
     "multer": "^2.2.0",
     "pg": "^8.22.0",
     "sqlite3": "^6.0.1"
+  },
+  "devDependencies": {
+    "astro": "^5.13.5"
   }
 }

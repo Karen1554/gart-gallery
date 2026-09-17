@@ -1,0 +1,57 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+const gateway = import.meta.env.PUBLIC_API_GATEWAY_URL || 'http://localhost:3000';
+---
+<MainLayout title="Acceso de usuarios">
+  <section class="page auth-page">
+    <p class="eyebrow">GART GALLERY</p>
+    <div class="auth-shell">
+      <div class="auth-intro"><h1>Tu espacio dentro de GART</h1><p>Inicia sesión para guardar obras, gestionar tu perfil o publicar tu trabajo artístico.</p></div>
+      <div class="auth-card">
+        <div class="tabs"><button class="tab active" type="button" data-tab="login">Iniciar sesión</button><button class="tab" type="button" data-tab="register">Registrarse</button></div>
+        <form id="login-form" class="auth-form">
+          <label>Usuario<input name="username" autocomplete="username" required /></label>
+          <label>Contraseña<input name="password" type="password" autocomplete="current-password" required /></label>
+          <button class="button" type="submit">Iniciar sesión</button>
+        </form>
+        <form id="register-form" class="auth-form hidden">
+          <label>Usuario<input name="username" autocomplete="username" minlength="3" required /></label>
+          <label>Contraseña<input name="password" type="password" autocomplete="new-password" minlength="8" required /></label>
+          <label>Quiero registrarme como<select name="role"><option value="VISITANTE">Visitante</option><option value="ARTISTA">Artista</option></select></label>
+          <button class="button" type="submit">Crear cuenta</button>
+        </form>
+        <p id="auth-status" class="auth-status" role="status"></p>
+      </div>
+    </div>
+  </section>
+</MainLayout>
+
+<style>
+  .auth-page { max-width: 1120px; } .auth-shell { display: grid; grid-template-columns: 1fr 420px; gap: 70px; align-items: center; margin-top: 36px; } .auth-intro h1 { max-width: 480px; font-size: clamp(2.5rem, 5vw, 4.5rem); line-height: 1; } .auth-intro p { color: #777; max-width: 410px; line-height: 1.7; } .auth-card { background: #fff; border: 1px solid #e5e3dd; border-radius: 5px; padding: 28px; box-shadow: 0 16px 40px #27251d0d; } .tabs { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid #e5e3dd; margin-bottom: 24px; } .tab { border: 0; background: transparent; padding: 12px 8px; color: #8d8a83; cursor: pointer; border-bottom: 2px solid transparent; } .tab.active { color: #252525; border-color: #b58b4d; } .auth-form { display: grid; gap: 14px; } .auth-form label { display: grid; gap: 7px; color: #555; font-size: 11px; font-weight: 600; } .auth-form input, .auth-form select { border: 1px solid #dcd9d1; border-radius: 3px; padding: 12px; color: #222; background: #fbfaf7; font: inherit; } .auth-form .button { border: 0; cursor: pointer; text-align: center; margin-top: 8px; } .auth-status { min-height: 22px; color: #777; font-size: 12px; line-height: 1.5; } .auth-status.error { color: #a0473f; } .hidden { display: none; } @media (max-width: 800px) { .auth-shell { grid-template-columns: 1fr; gap: 25px; } .auth-card { max-width: 520px; } }
+</style>
+
+<script define:vars={{ gateway }}>
+  const loginForm = document.querySelector('#login-form');
+  const registerForm = document.querySelector('#register-form');
+  const status = document.querySelector('#auth-status');
+  const tabs = document.querySelectorAll('.tab');
+  const showStatus = (message, error = false) => { status.textContent = message; status.classList.toggle('error', error); };
+  tabs.forEach((tab) => tab.addEventListener('click', () => {
+    const login = tab.dataset.tab === 'login';
+    tabs.forEach((item) => item.classList.toggle('active', item === tab));
+    loginForm.classList.toggle('hidden', !login);
+    registerForm.classList.toggle('hidden', login);
+    showStatus('');
+  }));
+  async function authenticate(form, endpoint) {
+    const payload = Object.fromEntries(new FormData(form));
+    const response = await fetch(`${gateway}/api/auth/${endpoint}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || 'No se pudo completar la operación.');
+    localStorage.setItem('gart.access_token', data.access_token);
+    localStorage.setItem('gart.user', JSON.stringify(data.user));
+    window.location.href = data.user.role === 'WEBMASTER' ? '/dashboard' : data.user.role === 'ARTISTA' ? '/artists' : '/';
+  }
+  loginForm.addEventListener('submit', async (event) => { event.preventDefault(); try { await authenticate(loginForm, 'login'); } catch (error) { showStatus(error.message, true); } });
+  registerForm.addEventListener('submit', async (event) => { event.preventDefault(); try { await authenticate(registerForm, 'register'); } catch (error) { showStatus(error.message, true); } });
+</script>

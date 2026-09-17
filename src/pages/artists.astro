@@ -1,0 +1,9 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+const gateway = import.meta.env.PUBLIC_API_GATEWAY_URL || 'http://localhost:3000';
+---
+<MainLayout title="Artistas"><section class="page"><p class="eyebrow">TALENTO Y TRAYECTORIA</p><h1>Artistas</h1><p class="intro">Descubre las historias detrás de cada obra.</p><div class="cards" id="artist-list"><p>Cargando artistas...</p></div></section></MainLayout>
+<script define:vars={{ gateway }}>
+  const list = document.querySelector('#artist-list');
+  fetch(`${gateway}/api/artists`).then((response) => response.ok ? response.json() : Promise.reject()).then((data) => { list.innerHTML = data.items.map((artist) => `<article class="card"><h2>${artist.name}</h2><p>${artist.biography}</p><a class="button" href="/works?artist=${artist.id}">Ver obras</a></article>`).join(''); }).catch(() => { list.innerHTML = '<p>No se pudieron cargar los artistas.</p>'; });
+</script>

@@ -1,0 +1,158 @@
+---
+const apiGatewayUrl = import.meta.env.PUBLIC_API_GATEWAY_URL || 'http://localhost:3000';
+const featuredWorks = [
+  { id: 1, title: 'Reflejos del alma', artist: 'Laura Méndez', price: '$ 1.200.000', image: 'https://images.unsplash.com/photo-1549490349-8643362247b5?auto=format&fit=crop&w=700&q=85' },
+  { id: 2, title: 'Naturaleza abstracta', artist: 'Carlos Pérez', price: '$ 950.000', image: 'https://images.unsplash.com/photo-1549490349-8643362247b5?auto=format&fit=crop&w=700&q=85' },
+  { id: 3, title: 'Sueños de colores', artist: 'Ana Torres', price: '$ 1.500.000', image: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?auto=format&fit=crop&w=700&q=85' },
+  { id: 4, title: 'Travesía', artist: 'Miguel Ángel', price: '$ 800.000', image: 'https://images.unsplash.com/photo-1577083288073-40892c0860a4?auto=format&fit=crop&w=700&q=85' },
+];
+const galleries = [
+  { id: 1, initials: 'GG', name: 'GART Gallery', location: 'Bogotá, Colombia', artists: '32 Artistas', image: 'https://images.unsplash.com/photo-1561214115-f2f134cc4912?auto=format&fit=crop&w=700&q=85' },
+  { id: 2, initials: 'GH', name: 'Galería Horizonte', location: 'Medellín, Colombia', artists: '18 Artistas', image: 'https://images.unsplash.com/photo-1577083552431-6e5fd01aa342?auto=format&fit=crop&w=700&q=85' },
+  { id: 3, initials: 'AV', name: 'Arte Vivo', location: 'Cali, Colombia', artists: '22 Artistas', image: 'https://images.unsplash.com/photo-1577083288073-40892c0860a4?auto=format&fit=crop&w=700&q=85' },
+  { id: 4, initials: 'EC', name: 'Espacio Creativo', location: 'Barranquilla, Colombia', artists: '15 Artistas', image: 'https://images.unsplash.com/photo-1561214115-f2f134cc4912?auto=format&fit=crop&w=700&q=85' },
+];
+---
+
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="description" content="GART Gallery: arte que inspira, espacios que conectan." />
+    <title>GART Gallery — Arte que inspira</title>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/">
+        <span class="brand-mark">G</span>
+        <span>GART<br /><b>GALLERY</b></span>
+      </a>
+      <nav aria-label="Navegación principal">
+        <a class="active" href="/">Inicio</a><a href="/galleries">Galerías</a><a href="/artists">Artistas</a><a href="/works">Obras</a><a href="/about">Sobre nosotros</a><a href="/contact">Contacto</a>
+      </nav>
+      <div class="header-actions"><a href="/works?q=" aria-label="Buscar">⌕</a><a href="/favorites" aria-label="Favoritos">♡</a><a href="/cart" aria-label="Carrito">🛒</a><a class="login" href="/login">Iniciar sesión</a></div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">COLECCIÓN DESTACADA · 2026</p>
+          <h1>Arte que inspira,<br /><em>espacios que<br />conectan.</em></h1>
+          <p class="hero-text">Descubre obras únicas de artistas<br />increíbles en nuestras galerías.</p>
+          <div class="hero-actions"><a class="button button-primary" href="/works">Explorar obras <span>→</span></a><a class="button button-outline" href="/about">Conoce más</a></div>
+        </div>
+        <div class="hero-art">
+          <img src="https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?auto=format&fit=crop&w=1400&q=90" alt="Obra de arte de la colección GART Gallery" />
+          <span class="art-label">OBRA DESTACADA<br /><b>ARTE CONTEMPORÁNEO</b></span>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-heading"><div><p class="eyebrow">DESCUBRE NUEVOS ESPACIOS</p><h2>Galerías destacadas</h2></div><a class="view-all" href="/galleries">Ver todas <span>→</span></a></div>
+        <div class="gallery-grid" id="gallery-grid">
+          {galleries.map((gallery) => <a class="gallery-card" href={`/galleries/${gallery.id}`}>
+            <div class="card-image"><img src={gallery.image} alt={gallery.name} /><span class="gallery-initials">{gallery.initials}</span></div>
+            <div class="card-content"><h3>{gallery.name}</h3><p>{gallery.location}</p><small>{gallery.artists}</small></div>
+          </a>)}
+        </div>
+      </section>
+
+      <section class="section works-section">
+        <div class="section-heading"><div><p class="eyebrow">SELECCIÓN DE LA SEMANA</p><h2>Obras destacadas</h2></div><a class="view-all" href="/works">Ver todas <span>→</span></a></div>
+        <div class="works-grid" id="works-grid">
+          {featuredWorks.map((work) => <a class="work-card" href={`/works/${work.id}`}>
+            <div class="work-image"><img src={work.image} alt={work.title} /><button aria-label={`Agregar ${work.title} a favoritos`}>♡</button></div>
+            <div class="work-content"><h3>{work.title}</h3><p>{work.artist}</p><strong>{work.price}</strong></div>
+          </a>)}
+        </div>
+      </section>
+
+      <section class="trust-bar"><div><span>♢</span><b>Compra segura</b><small>Tus datos siempre están protegidos.</small></div><div><span>✧</span><b>Obras auténticas</b><small>Certificadas por sus artistas.</small></div><div><span>▱</span><b>Envíos seguros</b><small>Recibe tu obra donde estés.</small></div><div><span>♧</span><b>Artistas verificados</b><small>Conoce sus historias y talento.</small></div></section>
+    </main>
+
+    <footer><div class="brand"><span class="brand-mark">G</span><span>GART<br /><b>GALLERY</b></span></div><p>Arte que inspira, espacios que conectan.</p><div class="footer-links"><a href="/about">Sobre nosotros</a><a href="/contact">Contacto</a><a href="/galleries">Galerías</a></div><small>© 2026 GART Gallery</small></footer>
+  </body>
+</html>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;1,500&display=swap');
+  :global(*) { box-sizing: border-box; }
+  :global(body) { margin: 0; color: #202020; background: #f8f8f6; font-family: 'DM Sans', sans-serif; }
+  a { color: inherit; text-decoration: none; }
+  button { font: inherit; }
+  .site-header { height: 76px; padding: 0 clamp(22px, 4vw, 64px); display: flex; align-items: center; justify-content: space-between; gap: 24px; background: rgba(255,255,255,.94); border-bottom: 1px solid #e7e5df; position: relative; z-index: 2; }
+  .brand { display: flex; align-items: center; gap: 9px; font-size: 10px; line-height: .95; letter-spacing: .7px; font-weight: 600; }
+  .brand b { font-weight: 700; letter-spacing: 1.2px; }
+  .brand-mark { border: 1px solid #2a2a2a; width: 25px; height: 31px; display: grid; place-items: center; font-family: 'Playfair Display', serif; font-size: 17px; }
+  nav { display: flex; align-items: center; gap: clamp(13px, 2vw, 29px); font-size: 10px; text-transform: uppercase; letter-spacing: .6px; color: #51514f; }
+  nav a { padding: 30px 0 27px; border-bottom: 2px solid transparent; } nav a:hover, nav a.active { color: #111; border-color: #b28a48; }
+  .header-actions { display: flex; align-items: center; gap: 13px; } .header-actions a { color: #333; cursor: pointer; font-size: 17px; padding: 3px; } .header-actions .login { background: #242424; color: #fff; padding: 10px 15px; border-radius: 3px; font-size: 10px; }
+  .hero { max-width: 1400px; margin: 22px auto 0; min-height: 390px; padding: clamp(38px, 6vw, 74px) clamp(32px, 7vw, 100px); display: grid; grid-template-columns: .92fr 1.08fr; background: #222321; color: #fff; border-radius: 4px; overflow: hidden; }
+  .hero-copy { z-index: 1; } .eyebrow { color: #ab8240; font-size: 9px; font-weight: 700; letter-spacing: 1.6px; margin: 0 0 14px; } h1 { font-family: 'Playfair Display', serif; font-size: clamp(2.5rem, 4vw, 4.1rem); line-height: .98; font-weight: 500; margin: 0 0 22px; } h1 em { color: #f4f2ed; font-style: italic; } .hero-text { color: #c4c4c0; line-height: 1.5; font-size: 13px; margin-bottom: 27px; }
+  .hero-actions { display: flex; gap: 10px; } .button { padding: 12px 17px; border-radius: 3px; font-size: 10px; font-weight: 600; } .button-primary { background: #be9655; color: #fff; } .button-outline { border: 1px solid #a58a61; color: #e6dfd1; } .button span { margin-left: 12px; }
+  .hero-art { position: relative; margin: -74px -100px -74px 0; } .hero-art:after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, #222321 0%, transparent 28%), linear-gradient(0deg, rgba(0,0,0,.25), transparent 45%); } .hero-art img { width: 100%; height: 100%; object-fit: cover; object-position: center 50%; filter: saturate(.82); } .art-label { position: absolute; z-index: 1; bottom: 24px; right: 26px; font-size: 8px; letter-spacing: 1px; line-height: 1.5; color: #eee; text-align: right; } .art-label b { color: #d5ad6e; font-size: 9px; }
+  .section { max-width: 1400px; margin: 0 auto; padding: 38px clamp(22px, 4vw, 64px) 0; } .section-heading { display: flex; justify-content: space-between; align-items: end; margin-bottom: 17px; } .section-heading .eyebrow { margin-bottom: 7px; } h2 { font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 500; margin: 0; } .view-all { color: #98733e; font-size: 10px; } .view-all span { margin-left: 8px; font-size: 15px; }
+  .gallery-grid, .works-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; } .gallery-card, .work-card { background: #fff; border: 1px solid #e6e4df; border-radius: 4px; overflow: hidden; transition: transform .2s, box-shadow .2s; } .gallery-card:hover, .work-card:hover { transform: translateY(-4px); box-shadow: 0 9px 25px #1f1f1f12; } .card-image { height: 125px; position: relative; background: #ddd; } .card-image img, .work-image img { width: 100%; height: 100%; object-fit: cover; } .gallery-initials { position: absolute; bottom: 8px; left: 9px; width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; background: #fbfaf5; color: #252525; font-size: 9px; font-weight: 700; border: 2px solid #fff; } .card-content, .work-content { padding: 11px 12px 13px; } h3 { font-family: 'Playfair Display', serif; font-size: 14px; font-weight: 600; margin: 0 0 6px; } .card-content p, .work-content p { color: #777; font-size: 10px; margin: 0 0 8px; } .card-content small { font-size: 9px; color: #a07c43; }
+  .works-section { padding-top: 42px; padding-bottom: 42px; } .work-image { height: 192px; position: relative; background: #ddd; } .work-image button { position: absolute; top: 8px; right: 8px; background: #ffffffe8; border: 0; border-radius: 50%; width: 26px; height: 26px; cursor: pointer; } .work-content strong { font-size: 11px; font-weight: 700; }
+  .trust-bar { max-width: 1272px; margin: 0 auto 48px; padding: 18px 24px; background: #252525; color: #fff; display: grid; grid-template-columns: repeat(4, 1fr); border-radius: 4px; } .trust-bar div { display: grid; grid-template-columns: 25px 1fr; column-gap: 9px; align-items: center; border-right: 1px solid #ffffff1f; padding: 0 17px; } .trust-bar div:last-child { border: 0; } .trust-bar span { grid-row: span 2; color: #c29959; font-size: 20px; } .trust-bar b { font-size: 10px; } .trust-bar small { color: #a7a7a5; font-size: 8px; margin-top: 4px; }
+  footer { border-top: 1px solid #e1dfd9; background: #fff; padding: 29px clamp(22px, 4vw, 64px); display: flex; align-items: center; gap: 40px; color: #777; font-size: 10px; } footer .brand { color: #222; } footer p { flex: 1; } .footer-links { display: flex; gap: 20px; } footer small { color: #aaa; }
+  @media (max-width: 800px) { .site-header { height: auto; padding-top: 15px; padding-bottom: 15px; flex-wrap: wrap; } nav { order: 3; width: 100%; overflow-x: auto; justify-content: space-between; } nav a { padding: 9px 0 5px; white-space: nowrap; } .hero { grid-template-columns: 1fr; margin: 12px 12px 0; padding: 40px 26px 0; } .hero-art { height: 235px; margin: 35px -26px 0; } .gallery-grid, .works-grid { grid-template-columns: repeat(2, 1fr); } .trust-bar { grid-template-columns: repeat(2, 1fr); margin: 0 22px 35px; gap: 18px 0; } .trust-bar div:nth-child(2) { border-right: 0; } footer { flex-wrap: wrap; gap: 15px; } footer p { flex-basis: 100%; order: 3; } }
+  @media (max-width: 480px) { .header-actions a:not(.login) { display: none; } .header-actions .login { padding: 8px 10px; } .gallery-grid, .works-grid { grid-template-columns: 1fr 1fr; gap: 8px; } .card-image { height: 100px; } .work-image { height: 140px; } .trust-bar { grid-template-columns: 1fr; } .trust-bar div { border-right: 0; } h2 { font-size: 21px; } }
+</style>
+
+<script define:vars={{ apiGatewayUrl }}>
+  const worksGrid = document.querySelector('#works-grid');
+  const galleryGrid = document.querySelector('#gallery-grid');
+
+  const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+  }[character]));
+
+  const formatPrice = (price) => price == null
+    ? 'Consultar precio'
+    : `$ ${Number(price).toLocaleString('es-CO')}`;
+
+  async function loadWorks() {
+    if (!worksGrid) return;
+    const response = await fetch(`${apiGatewayUrl}/api/works?limit=4`);
+    if (!response.ok) throw new Error('No se pudieron cargar las obras');
+    const data = await response.json();
+    if (!data.items?.length) return;
+    worksGrid.innerHTML = data.items.map((work) => `
+      <a class="work-card" href="/works?id=${encodeURIComponent(work.id)}">
+        <div class="work-image">
+          <img src="${escapeHtml(work.image_url || 'https://images.unsplash.com/photo-1549490349-8643362247b5?auto=format&fit=crop&w=700&q=85')}" alt="${escapeHtml(work.title)}" />
+          <button type="button" aria-label="Agregar ${escapeHtml(work.title)} a favoritos">♡</button>
+        </div>
+        <div class="work-content">
+          <h3>${escapeHtml(work.title)}</h3>
+          <p>${escapeHtml(work.category)}</p>
+          <strong>${formatPrice(work.price)}</strong>
+        </div>
+      </a>
+    `).join('');
+  }
+
+  async function loadGalleries() {
+    if (!galleryGrid) return;
+    const response = await fetch(`${apiGatewayUrl}/api/galleries`);
+    if (!response.ok) throw new Error('No se pudieron cargar las galerías');
+    const data = await response.json();
+    if (!data.items?.length) return;
+    galleryGrid.innerHTML = data.items.map((gallery) => `
+      <a class="gallery-card" href="/galleries?id=${encodeURIComponent(gallery.id)}">
+        <div class="card-image">
+          <img src="https://images.unsplash.com/photo-1561214115-f2f134cc4912?auto=format&fit=crop&w=700&q=85" alt="${escapeHtml(gallery.name)}" />
+          <span class="gallery-initials">${escapeHtml(gallery.name.slice(0, 2).toUpperCase())}</span>
+        </div>
+        <div class="card-content">
+          <h3>${escapeHtml(gallery.name)}</h3>
+          <p>${escapeHtml([gallery.city, gallery.country].filter(Boolean).join(', '))}</p>
+          <small>${gallery.artist_ids?.length || 0} Artistas</small>
+        </div>
+      </a>
+    `).join('');
+  }
+
+  Promise.allSettled([loadWorks(), loadGalleries()]);
+</script>

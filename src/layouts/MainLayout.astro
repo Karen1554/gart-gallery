@@ -1,0 +1,41 @@
+---
+const { title, description = 'GART Gallery' } = Astro.props;
+---
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="description" content={description} />
+    <title>{title} — GART Gallery</title>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/">
+        <span class="brand-mark">G</span><span>GART<br /><b>GALLERY</b></span>
+      </a>
+      <nav aria-label="Navegación principal">
+        <a href="/">Inicio</a><a href="/galleries">Galerías</a><a href="/artists">Artistas</a><a href="/works">Obras</a><a href="/about">Sobre nosotros</a><a href="/contact">Contacto</a>
+      </nav>
+      <div class="header-actions">
+        <a href="/works?q=" aria-label="Buscar">⌕</a><a href="/favorites" aria-label="Favoritos">♡</a><a href="/cart" aria-label="Carrito">🛒</a><a class="login" href="/login">Iniciar sesión</a>
+      </div>
+    </header>
+    <main><slot /></main>
+    <footer><div class="brand"><span class="brand-mark">G</span><span>GART<br /><b>GALLERY</b></span></div><p>Arte que inspira, espacios que conectan.</p><div class="footer-links"><a href="/about">Sobre nosotros</a><a href="/contact">Contacto</a><a href="/galleries">Galerías</a></div><small>© 2026 GART Gallery</small></footer>
+  </body>
+</html>
+
+<style is:global>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;1,500&display=swap');
+  * { box-sizing: border-box; } body { margin: 0; color: #202020; background: #f8f8f6; font-family: 'DM Sans', sans-serif; } a { color: inherit; text-decoration: none; }
+  .site-header { min-height: 76px; padding: 0 clamp(22px, 4vw, 64px); display: flex; align-items: center; justify-content: space-between; gap: 24px; background: #fff; border-bottom: 1px solid #e7e5df; } .brand { display: flex; align-items: center; gap: 9px; font-size: 10px; line-height: .95; letter-spacing: .7px; font-weight: 600; } .brand b { letter-spacing: 1.2px; } .brand-mark { border: 1px solid #2a2a2a; width: 25px; height: 31px; display: grid; place-items: center; font-family: 'Playfair Display', serif; font-size: 17px; }
+  nav { display: flex; gap: clamp(13px, 2vw, 29px); font-size: 10px; text-transform: uppercase; letter-spacing: .6px; color: #51514f; } nav a { padding: 30px 0 27px; border-bottom: 2px solid transparent; } nav a:hover { border-color: #b28a48; color: #111; } .header-actions { display: flex; gap: 13px; align-items: center; } .header-actions a { font-size: 17px; } .header-actions .login { background: #242424; color: #fff; padding: 10px 15px; border-radius: 3px; font-size: 10px; }
+  main { min-height: calc(100vh - 150px); } .page { max-width: 1200px; margin: 0 auto; padding: 66px 28px; } .eyebrow { color: #a47a3e; font-size: 9px; font-weight: 700; letter-spacing: 1.6px; margin: 0 0 10px; } h1, h2 { font-family: 'Playfair Display', serif; font-weight: 500; } h1 { font-size: clamp(2.3rem, 5vw, 4rem); margin: 0 0 14px; } h2 { font-size: 24px; margin: 0 0 10px; } .intro { color: #73736f; max-width: 640px; line-height: 1.7; }
+  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 32px; } .card { background: #fff; border: 1px solid #e5e3dd; border-radius: 4px; padding: 22px; } .card h2 { font-size: 20px; } .card p { color: #73736f; line-height: 1.6; font-size: 13px; } .button { display: inline-block; margin-top: 10px; background: #bd9455; color: #fff; padding: 12px 17px; border-radius: 3px; font-size: 11px; font-weight: 600; }
+  .list { display: grid; gap: 12px; margin-top: 25px; } .list-item { display: flex; justify-content: space-between; gap: 16px; align-items: center; padding: 18px; background: #fff; border: 1px solid #e5e3dd; border-radius: 4px; } .list-item p { margin: 4px 0 0; color: #777; font-size: 12px; } .price { font-weight: 700; white-space: nowrap; }
+  .work-catalog { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-top: 32px; } .work-tile { display: flex; flex-direction: column; overflow: hidden; background: #fff; border: 1px solid #e5e3dd; border-radius: 5px; transition: transform .2s, box-shadow .2s; } .work-tile:hover { transform: translateY(-4px); box-shadow: 0 12px 28px #1f1f1f14; } .work-tile-image { aspect-ratio: 4 / 3; overflow: hidden; background: #e8e6df; } .work-tile-image img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .3s; } .work-tile:hover img { transform: scale(1.03); } .work-tile-body { display: flex; flex: 1; flex-direction: column; padding: 16px; } .work-tile h2 { color: #242424; font-size: 20px; margin: 0 0 7px; } .work-tile p { color: #777; font-size: 12px; margin: 0 0 12px; } .work-tile-footer { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: auto; } .work-tile .button { margin: 0; } .availability { color: #7d8b4a; font-size: 10px; font-weight: 600; }
+  .detail-layout { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(280px, .9fr); gap: 36px; margin-top: 34px; } .detail-image { aspect-ratio: 4 / 3; overflow: hidden; border-radius: 5px; background: #e8e6df; } .detail-image img { width: 100%; height: 100%; object-fit: cover; } .detail-info { padding: 10px 0; } .detail-info h2 { font-size: 34px; } .detail-info p { color: #73736f; line-height: 1.7; } .detail-meta { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 25px 0; } .detail-meta div { padding: 14px; background: #fff; border: 1px solid #e5e3dd; } .detail-meta small { display: block; color: #999; font-size: 10px; margin-bottom: 5px; text-transform: uppercase; letter-spacing: .7px; } .detail-meta strong { font-size: 14px; }
+  footer { border-top: 1px solid #e1dfd9; background: #fff; padding: 29px clamp(22px, 4vw, 64px); display: flex; align-items: center; gap: 40px; color: #777; font-size: 10px; } footer p { flex: 1; } .footer-links { display: flex; gap: 20px; } footer small { color: #aaa; }
+  @media (max-width: 800px) { .site-header { flex-wrap: wrap; padding: 15px 22px; } nav { order: 3; width: 100%; overflow-x: auto; justify-content: space-between; } nav a { padding: 9px 0 5px; white-space: nowrap; } .cards, .work-catalog { grid-template-columns: 1fr; } .detail-layout { grid-template-columns: 1fr; } footer { flex-wrap: wrap; gap: 15px; } footer p { flex-basis: 100%; order: 3; } }
+</style>

@@ -1,0 +1,14 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+const gateway = import.meta.env.PUBLIC_API_GATEWAY_URL || 'http://localhost:3000';
+---
+<MainLayout title="Obras">
+  <section class="page"><p class="eyebrow">COLECCIÓN GART</p><h1>Obras seleccionadas</h1><p class="intro">Explora obras originales por categoría, artista y disponibilidad.</p><div class="work-catalog" id="works-list"><p>Cargando obras...</p></div></section>
+</MainLayout>
+<script define:vars={{ gateway }}>
+  const list = document.querySelector('#works-list');
+  const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[c]));
+  fetch(`${gateway}/api/works?limit=50`).then((response) => response.ok ? response.json() : Promise.reject(new Error('Error cargando obras'))).then((data) => {
+    list.innerHTML = data.items.length ? data.items.map((work) => `<article class="work-tile"><a href="/works/${encodeURIComponent(work.id)}"><div class="work-tile-image"><img src="${escapeHtml(work.image_url || 'https://images.unsplash.com/photo-1549490349-8643362247b5?auto=format&fit=crop&w=700&q=85')}" alt="${escapeHtml(work.title)}" /></div><div class="work-tile-body"><h2>${escapeHtml(work.title)}</h2><p>${escapeHtml(work.category)} · ${escapeHtml(work.year)}</p><div class="work-tile-footer"><span class="price">${work.price == null ? 'Consultar precio' : `$ ${Number(work.price).toLocaleString('es-CO')}`}</span><span class="button">Ver obra</span></div></div></a></article>`).join('') : '<p>No hay obras publicadas.</p>';
+  }).catch(() => { list.innerHTML = '<p>No se pudieron cargar las obras.</p>'; });
+</script>
