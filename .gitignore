@@ -5,3 +5,4 @@ dist/
 .env.astro
 services/*/__pycache__/
 services/__pycache__/
+services/*/data/
