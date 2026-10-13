@@ -94,22 +94,23 @@ def init_db() -> None:
                     created_at=datetime(2024, 5, 4, tzinfo=timezone.utc),
                 ),
             ]
-            db.executemany(
-                """
-                INSERT INTO works_works (
-                    id, title, description, year, category, image_url, artist_id,
-                    gallery_id, available, price, moderation_status, created_at
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                """,
-                [
-                    (
-                        work.id, work.title, work.description, work.year, work.category,
-                        work.image_url, work.artist_id, work.gallery_id, work.available,
-                        work.price, work.moderation_status, work.created_at.isoformat(),
-                    )
-                    for work in seed
-                ],
-            )
+            with db.cursor() as cursor:
+                cursor.executemany(
+                    """
+                    INSERT INTO works_works (
+                        id, title, description, year, category, image_url, artist_id,
+                        gallery_id, available, price, moderation_status, created_at
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """,
+                    [
+                        (
+                            work.id, work.title, work.description, work.year, work.category,
+                            work.image_url, work.artist_id, work.gallery_id, work.available,
+                            work.price, work.moderation_status, work.created_at.isoformat(),
+                        )
+                        for work in seed
+                    ],
+                )
             db.execute(
                 "SELECT setval(pg_get_serial_sequence('works_works', 'id'), "
                 "COALESCE(MAX(id), 1), true) FROM works_works"
