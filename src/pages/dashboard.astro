@@ -1,0 +1,8 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+---
+<MainLayout title="Panel WEBMASTER"><section class="page"><p class="eyebrow">PANEL DE GESTIÓN</p><h1>Bienvenido, WEBMASTER</h1><p class="intro">Gestiona obras, galerías, artistas y contenido desde los servicios de GART Gallery.</p><div class="cards"><article class="card"><h2>Obras</h2><p>Administra el catálogo y su estado de moderación.</p><a class="button" href="/works">Gestionar obras</a></article><article class="card"><h2>Galerías</h2><p>Actualiza espacios, contacto y artistas relacionados.</p><a class="button" href="/galleries">Gestionar galerías</a></article><article class="card"><h2>Contenido</h2><p>Revisa la presentación pública de la plataforma.</p><a class="button" href="/about">Ver contenido</a></article></div></section></MainLayout>
+<script>
+  const user = JSON.parse(localStorage.getItem('gart.user') || 'null');
+  if (!user || user.role !== 'WEBMASTER') window.location.replace('/login');
+</script>

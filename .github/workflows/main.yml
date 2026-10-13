@@ -55,12 +55,15 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
 
+      - name: Construir sitio
+        run: npm run build
+
       - name: Ejecutar pruebas de integración
         run: npm run test:integration
 
 
   lighthouse:
-    name: Auditoría SEO y rendimiento
+    name: Verificación SEO y rutas publicadas
     needs: integration
     runs-on: ubuntu-latest
 
@@ -74,8 +77,8 @@ jobs:
       - name: Construir aplicación
         run: npm run build
 
-      - name: Ejecutar auditoría Lighthouse
-        run: npm run lighthouse
+      - name: Verificar metadatos y rutas estáticas
+        run: node scripts/verify-seo.js
 
   deploy:
     name: Despliegue a producción

@@ -14,6 +14,9 @@ const ADMIN_USER = process.env.ADMIN_USER || 'admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 
 const DATABASE_URL = process.env.DATABASE_URL;
+if (!DATABASE_URL && isProduction) {
+  throw new Error('DATABASE_URL is required in production');
+}
 const uploadsDir = process.env.UPLOADS_DIR || path.join(__dirname, 'uploads');
 fs.mkdirSync(uploadsDir, { recursive: true });
 
@@ -70,42 +73,10 @@ if (DATABASE_URL) {
     }
   };
 } else {
-  const dataPath = process.env.DB_PATH || path.join(__dirname, 'data', 'gallery.json');
-  fs.mkdirSync(path.dirname(dataPath), { recursive: true });
-
   const state = {
     works: [],
     nextId: 1
   };
-
-  function loadState() {
-    if (!fs.existsSync(dataPath)) {
-      return;
-    }
-    try {
-      const raw = fs.readFileSync(dataPath, 'utf8');
-      if (!raw.trim()) {
-        return;
-      }
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed.works)) {
-        state.works = parsed.works;
-      }
-      if (Number.isInteger(parsed.nextId) && parsed.nextId > 0) {
-        state.nextId = parsed.nextId;
-      } else {
-        const maxId = state.works.reduce((max, row) => Math.max(max, Number(row.id) || 0), 0);
-        state.nextId = maxId + 1;
-      }
-    } catch (error) {
-      console.error('Error reading local data file:', error);
-    }
-  }
-
-  function saveState() {
-    const payload = JSON.stringify(state, null, 2);
-    fs.writeFileSync(dataPath, payload, 'utf8');
-  }
 
   function applyFilters(rows, params, hasCategoryFilter = false) {
     let index = 0;
@@ -137,11 +108,8 @@ if (DATABASE_URL) {
   }
 
   dbBackend = {
-    type: 'json',
-    init: async () => {
-      loadState();
-      saveState();
-    },
+    type: 'memory',
+    init: async () => {},
     all: async (sql, params = []) => {
       if (/SELECT\s+id,\s*title,\s*description,\s*year,\s*category,\s*image_path,\s*created_at\s+FROM\s+works/i.test(sql)) {
         const hasCategoryFilter = /category\s*=\s*(\?|\$\d+)/i.test(sql);
@@ -187,7 +155,6 @@ if (DATABASE_URL) {
           created_at: new Date().toISOString()
         };
         state.works.push(row);
-        saveState();
         return { lastID: row.id, changes: 1 };
       }
 
@@ -206,7 +173,6 @@ if (DATABASE_URL) {
           category,
           image_path: imagePath
         };
-        saveState();
         return { lastID: null, changes: 1 };
       }
 
@@ -215,9 +181,6 @@ if (DATABASE_URL) {
         const before = state.works.length;
         state.works = state.works.filter((item) => item.id !== id);
         const changes = before - state.works.length;
-        if (changes > 0) {
-          saveState();
-        }
         return { lastID: null, changes };
       }
 

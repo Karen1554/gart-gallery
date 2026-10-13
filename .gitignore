@@ -1,4 +1,8 @@
 node_modules/
+dist/
+.astro/
 .env
-data/*.db
-data/*.db-*
+.env.astro
+services/*/__pycache__/
+services/__pycache__/
+services/*/data/
