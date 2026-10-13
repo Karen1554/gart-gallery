@@ -7,7 +7,7 @@ const PORT = Number(process.env.PORT) || 3000;
 const frontendDirectory = path.join(__dirname, '..', 'dist');
 
 app.use((req, res, next) => {
-  const allowedOrigin = process.env.FRONTEND_ORIGIN || 'http://localhost:4321';
+  const allowedOrigin = process.env.FRONTEND_ORIGIN || process.env.RENDER_EXTERNAL_URL || 'http://localhost:4321';
   res.header('Access-Control-Allow-Origin', allowedOrigin);
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -19,7 +19,10 @@ app.use((req, res, next) => {
   next();
 });
 
-const serviceUrl = (name, fallback) => process.env[name] || fallback;
+const serviceUrl = (name, fallback) => {
+  const url = process.env[name] || fallback;
+  return /^[a-z][a-z\d+.-]*:\/\//i.test(url) ? url : `http://${url}`;
+};
 
 const proxy = (target, prefix) => createProxyMiddleware({
   target,
