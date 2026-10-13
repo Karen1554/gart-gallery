@@ -3,25 +3,38 @@ services:
     name: gart-gallery
     env: node
     plan: free
-    buildCommand: npm install && npm run astro:build
+    buildCommand: npm ci --include=dev && npm run astro:build
     startCommand: npm start
     envVars:
       - key: NODE_VERSION
         value: 20
       - key: NODE_ENV
         value: production
-      - key: FRONTEND_ORIGIN
-        value: https://gart-gallery.onrender.com
       - key: GALLERY_SERVICE_URL
-        value: https://gart-gallery-gallery.onrender.com
+        fromService:
+          type: web
+          name: gart-gallery-gallery
+          property: hostport
       - key: WORKS_SERVICE_URL
-        value: https://gart-gallery-works.onrender.com
+        fromService:
+          type: web
+          name: gart-gallery-works
+          property: hostport
       - key: AUTH_SERVICE_URL
-        value: https://gart-gallery-auth.onrender.com
+        fromService:
+          type: web
+          name: gart-gallery-auth
+          property: hostport
       - key: PURCHASE_SERVICE_URL
-        value: https://gart-gallery-purchase.onrender.com
+        fromService:
+          type: web
+          name: gart-gallery-purchase
+          property: hostport
       - key: CONTENT_SERVICE_URL
-        value: https://gart-gallery-content.onrender.com
+        fromService:
+          type: web
+          name: gart-gallery-content
+          property: hostport
 
   - type: web
     name: gart-gallery-gallery
