@@ -5,6 +5,7 @@
   "scripts": {
     "start": "node api-gateway/server.js",
     "dev": "node api-gateway/server.js",
+    "build": "astro build",
     "astro:dev": "astro dev",
     "astro:build": "astro build",
     "astro:preview": "astro preview",
