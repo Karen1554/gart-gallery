@@ -50,6 +50,29 @@ bearer sessions, so data, carts, purchases, and sessions survive restarts.
 
 ## Local setup
 
+### Docker Compose
+
+Docker Compose starts PostgreSQL, the five FastAPI services, and the Astro
+site/API gateway. From the repository root, copy `.env.example` to `.env`,
+replace `ADMIN_PASSWORD` and `POSTGRES_PASSWORD` with local development
+passwords using URL-safe characters, then run:
+
+```powershell
+Copy-Item .env.example .env
+docker compose up --build
+```
+
+Open `http://localhost:3000`. The gateway waits until PostgreSQL and all
+microservices pass their health checks. PostgreSQL is also available on
+`localhost:5432` by default; configure `POSTGRES_PORT` if that port is already
+in use.
+
+Stop the stack with `docker compose down`. The named `postgres_data` volume
+keeps database contents across restarts; `docker compose down -v` removes that
+volume and permanently deletes the local database.
+
+### Running services without Docker
+
 Create a virtual environment and install the shared dependencies:
 
 ```powershell

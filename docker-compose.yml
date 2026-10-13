@@ -1,0 +1,137 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-gart_gallery}
+      POSTGRES_USER: ${POSTGRES_USER:-gart_gallery}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the root .env file}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  gallery:
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+    command: ["uvicorn", "--app-dir", "/app/services/gallery-service", "app:app", "--host", "0.0.0.0", "--port", "3001"]
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-gart_gallery}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-gart_gallery}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:3001/health', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  works:
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+    command: ["uvicorn", "--app-dir", "/app/services/works-service", "app:app", "--host", "0.0.0.0", "--port", "3002"]
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-gart_gallery}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-gart_gallery}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:3002/health', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  auth:
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+    command: ["uvicorn", "--app-dir", "/app/services/auth-service", "app:app", "--host", "0.0.0.0", "--port", "3003"]
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-gart_gallery}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-gart_gallery}
+      ADMIN_USER: ${ADMIN_USER:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in the root .env file}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:3003/health', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  purchase:
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+    command: ["uvicorn", "--app-dir", "/app/services/purchase-service", "app:app", "--host", "0.0.0.0", "--port", "3004"]
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-gart_gallery}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-gart_gallery}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:3004/health', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  content:
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+    command: ["uvicorn", "--app-dir", "/app/services/content-service", "app:app", "--host", "0.0.0.0", "--port", "3005"]
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-gart_gallery}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-gart_gallery}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:3005/health', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      PORT: 3000
+      GALLERY_SERVICE_URL: http://gallery:3001
+      WORKS_SERVICE_URL: http://works:3002
+      AUTH_SERVICE_URL: http://auth:3003
+      PURCHASE_SERVICE_URL: http://purchase:3004
+      CONTENT_SERVICE_URL: http://content:3005
+    ports:
+      - "3000:3000"
+    depends_on:
+      gallery:
+        condition: service_healthy
+      works:
+        condition: service_healthy
+      auth:
+        condition: service_healthy
+      purchase:
+        condition: service_healthy
+      content:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  postgres_data:
