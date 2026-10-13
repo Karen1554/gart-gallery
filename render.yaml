@@ -3,30 +3,32 @@ services:
     name: gart-gallery
     env: node
     plan: free
-    buildCommand: npm install
+    buildCommand: npm install && npm run astro:build
     startCommand: npm start
     envVars:
       - key: NODE_VERSION
         value: 20
       - key: NODE_ENV
         value: production
-      - key: DATABASE_URL
-        fromDatabase:
-          name: gart-gallery-db
-          property: connectionString
-      - key: ADMIN_USER
-        value: admin
-      - key: SESSION_SECRET
-        sync: false
-      - key: ADMIN_PASSWORD
-        sync: false
+      - key: FRONTEND_ORIGIN
+        value: https://gart-gallery.onrender.com
+      - key: GALLERY_SERVICE_URL
+        value: https://gart-gallery-gallery.onrender.com
+      - key: WORKS_SERVICE_URL
+        value: https://gart-gallery-works.onrender.com
+      - key: AUTH_SERVICE_URL
+        value: https://gart-gallery-auth.onrender.com
+      - key: PURCHASE_SERVICE_URL
+        value: https://gart-gallery-purchase.onrender.com
+      - key: CONTENT_SERVICE_URL
+        value: https://gart-gallery-content.onrender.com
 
   - type: web
     name: gart-gallery-gallery
     env: python
     plan: free
     buildCommand: pip install -r services/requirements.txt
-    startCommand: PYTHONPATH=services uvicorn --app-dir services/gallery-service app:app --host 0.0.0.0 --port 3001
+    startCommand: PYTHONPATH=services uvicorn --app-dir services/gallery-service app:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -40,7 +42,7 @@ services:
     env: python
     plan: free
     buildCommand: pip install -r services/requirements.txt
-    startCommand: PYTHONPATH=services uvicorn --app-dir services/works-service app:app --host 0.0.0.0 --port 3002
+    startCommand: PYTHONPATH=services uvicorn --app-dir services/works-service app:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -54,7 +56,7 @@ services:
     env: python
     plan: free
     buildCommand: pip install -r services/requirements.txt
-    startCommand: PYTHONPATH=services uvicorn --app-dir services/auth-service app:app --host 0.0.0.0 --port 3003
+    startCommand: PYTHONPATH=services uvicorn --app-dir services/auth-service app:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -72,7 +74,7 @@ services:
     env: python
     plan: free
     buildCommand: pip install -r services/requirements.txt
-    startCommand: PYTHONPATH=services uvicorn --app-dir services/purchase-service app:app --host 0.0.0.0 --port 3004
+    startCommand: PYTHONPATH=services uvicorn --app-dir services/purchase-service app:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -86,7 +88,7 @@ services:
     env: python
     plan: free
     buildCommand: pip install -r services/requirements.txt
-    startCommand: PYTHONPATH=services uvicorn --app-dir services/content-service app:app --host 0.0.0.0 --port 3005
+    startCommand: PYTHONPATH=services uvicorn --app-dir services/content-service app:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: DATABASE_URL
         fromDatabase:

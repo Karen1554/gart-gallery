@@ -3,11 +3,12 @@
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js",
+    "start": "node api-gateway/server.js",
+    "dev": "node api-gateway/server.js",
     "astro:dev": "astro dev",
     "astro:build": "astro build",
     "astro:preview": "astro preview",
+    "db:init": "python services/init_db.py",
     "test": "echo \"No tests configured\""
   },
   "engines": {

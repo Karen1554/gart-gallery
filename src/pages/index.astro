@@ -1,5 +1,5 @@
 ---
-const apiGatewayUrl = import.meta.env.PUBLIC_API_GATEWAY_URL || 'http://localhost:3000';
+const apiGatewayUrl = import.meta.env.PUBLIC_API_GATEWAY_URL || (import.meta.env.DEV ? 'http://localhost:3000' : '');
 const featuredWorks = [
   { id: 1, title: 'Reflejos del alma', artist: 'Laura Méndez', price: '$ 1.200.000', image: 'https://images.unsplash.com/photo-1549490349-8643362247b5?auto=format&fit=crop&w=700&q=85' },
   { id: 2, title: 'Naturaleza abstracta', artist: 'Carlos Pérez', price: '$ 950.000', image: 'https://images.unsplash.com/photo-1549490349-8643362247b5?auto=format&fit=crop&w=700&q=85' },

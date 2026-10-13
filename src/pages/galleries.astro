@@ -1,6 +1,6 @@
 ---
 import MainLayout from '../layouts/MainLayout.astro';
-const gateway = import.meta.env.PUBLIC_API_GATEWAY_URL || 'http://localhost:3000';
+const gateway = import.meta.env.PUBLIC_API_GATEWAY_URL || (import.meta.env.DEV ? 'http://localhost:3000' : '');
 ---
 <MainLayout title="Galerías"><section class="page"><p class="eyebrow">ESPACIOS DE ARTE</p><h1>Galerías</h1><p class="intro">Conoce los espacios que representan a nuestros artistas.</p><div class="cards" id="gallery-list"><p>Cargando galerías...</p></div></section></MainLayout>
 <script define:vars={{ gateway }}>

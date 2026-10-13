@@ -59,7 +59,8 @@ pip install -r services\requirements.txt
 ```
 
 Copy `.env.example` to `.env` and set `DATABASE_URL` to your local PostgreSQL
-connection string (or use the documented development default).
+connection string (or use the documented development default). The database
+helper loads this root `.env` automatically for local commands.
 
 Run a service from the repository root:
 
@@ -67,4 +68,28 @@ Run a service from the repository root:
 python services\auth-service\app.py
 ```
 
+Initialize all service tables and seed records explicitly:
+
+```powershell
+python services\init_db.py
+```
+
+Or from npm:
+
+```powershell
+npm run db:init
+```
+
+The command uses the same `DATABASE_URL` as the services and is safe to run
+again because each service creates missing tables and seeds only empty tables.
+It verifies the PostgreSQL connection and confirms every expected table exists.
+
 The gateway can then route to the service on its configured port.
+
+## Render deployment
+
+The root Render web service builds Astro into `dist` and serves the static
+pages and API gateway from one public URL. Set each microservice URL in the
+gateway environment variables configured in `render.yaml`; the browser uses
+same-origin `/api/...` routes in production. Render supplies `PORT` to each
+web service, and every Python service initializes its own tables on startup.

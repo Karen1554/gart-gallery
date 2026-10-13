@@ -1,6 +1,6 @@
 ---
 import MainLayout from '../../layouts/MainLayout.astro';
-const gateway = import.meta.env.PUBLIC_API_GATEWAY_URL || 'http://localhost:3000';
+const gateway = import.meta.env.PUBLIC_API_GATEWAY_URL || (import.meta.env.DEV ? 'http://localhost:3000' : '');
 export function getStaticPaths() {
   return [1, 2, 3, 4].map((id) => ({ params: { id: String(id) } }));
 }

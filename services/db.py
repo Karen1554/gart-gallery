@@ -2,10 +2,14 @@
 
 import os
 from contextlib import contextmanager
+from pathlib import Path
 from typing import Iterator
 
 import psycopg
+from dotenv import load_dotenv
 from psycopg.rows import dict_row
+
+load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
 
 def database_url() -> str:
@@ -25,7 +29,11 @@ def database_url() -> str:
 @contextmanager
 def connection() -> Iterator[psycopg.Connection]:
     """Open one transaction and commit it only when the service operation succeeds."""
-    with psycopg.connect(database_url(), row_factory=dict_row) as db:
+    with psycopg.connect(
+        database_url(),
+        row_factory=dict_row,
+        connect_timeout=int(os.getenv("DB_CONNECT_TIMEOUT", "5")),
+    ) as db:
         try:
             yield db
             db.commit()

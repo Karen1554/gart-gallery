@@ -1,6 +1,6 @@
 ---
 import MainLayout from '../layouts/MainLayout.astro';
-const gateway = import.meta.env.PUBLIC_API_GATEWAY_URL || 'http://localhost:3000';
+const gateway = import.meta.env.PUBLIC_API_GATEWAY_URL || (import.meta.env.DEV ? 'http://localhost:3000' : '');
 ---
 <MainLayout title="Acceso de usuarios">
   <section class="page auth-page">
