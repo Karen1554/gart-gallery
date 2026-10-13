@@ -10,6 +10,7 @@
     "astro:build": "astro build",
     "astro:preview": "astro preview",
     "db:init": "python services/init_db.py",
+    "test:integration": "node scripts/test-integration.js",
     "test": "echo \"No tests configured\""
   },
   "engines": {
