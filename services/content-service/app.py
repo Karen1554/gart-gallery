@@ -86,30 +86,32 @@ def init_db() -> None:
             """
         )
         if db.execute("SELECT COUNT(*) AS count FROM content_artists").fetchone()["count"] == 0:
-            db.executemany(
-                """
-                INSERT INTO content_artists (id, name, biography, image_url, active)
-                VALUES (%s, %s, %s, %s, %s)
-                """,
-                [
-                    (1, "Laura Méndez", "Pinta paisajes de memoria y territorio.", None, True),
-                    (2, "Carlos Pérez", "Explora el color desde la abstracción.", None, True),
-                    (3, "Ana Torres", "Crea composiciones llenas de luz.", None, True),
-                    (4, "Miguel Ángel", "Retrata viajes, montañas y horizontes.", None, True),
-                ],
-            )
+            with db.cursor() as cursor:
+                cursor.executemany(
+                    """
+                    INSERT INTO content_artists (id, name, biography, image_url, active)
+                    VALUES (%s, %s, %s, %s, %s)
+                    """,
+                    [
+                        (1, "Laura Méndez", "Pinta paisajes de memoria y territorio.", None, True),
+                        (2, "Carlos Pérez", "Explora el color desde la abstracción.", None, True),
+                        (3, "Ana Torres", "Crea composiciones llenas de luz.", None, True),
+                        (4, "Miguel Ángel", "Retrata viajes, montañas y horizontes.", None, True),
+                    ],
+                )
             db.execute(
                 "SELECT setval(pg_get_serial_sequence('content_artists', 'id'), "
                 "COALESCE(MAX(id), 1), true) FROM content_artists"
             )
         if db.execute("SELECT COUNT(*) AS count FROM content_pages").fetchone()["count"] == 0:
-            db.executemany(
-                "INSERT INTO content_pages (slug, title, body, published) VALUES (%s, %s, %s, TRUE)",
-                [
-                    ("about", "Sobre GART Gallery", "Un espacio para descubrir arte, artistas y galerías."),
-                    ("contact", "Contacto", "Escríbenos para conocer nuestras obras y exposiciones."),
-                ],
-            )
+            with db.cursor() as cursor:
+                cursor.executemany(
+                    "INSERT INTO content_pages (slug, title, body, published) VALUES (%s, %s, %s, TRUE)",
+                    [
+                        ("about", "Sobre GART Gallery", "Un espacio para descubrir arte, artistas y galerías."),
+                        ("contact", "Contacto", "Escríbenos para conocer nuestras obras y exposiciones."),
+                    ],
+                )
         if db.execute("SELECT COUNT(*) AS count FROM content_landing").fetchone()["count"] == 0:
             db.execute(
                 """

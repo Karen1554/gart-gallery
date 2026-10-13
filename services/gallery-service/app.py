@@ -95,23 +95,24 @@ def init_db() -> None:
                     image_url="https://images.unsplash.com/photo-1594784051650-5a5e8e8a0c6f?auto=format&fit=crop&w=1200&q=85",
                 ),
             ]
-            db.executemany(
-                """
-                INSERT INTO gallery_galleries (
-                    id, name, description, address, city, country, website, phone,
-                    email, image_url, additional_images, artist_ids, active
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                """,
-                [
-                    (
-                        gallery.id, gallery.name, gallery.description, gallery.address,
-                        gallery.city, gallery.country, gallery.website, gallery.phone,
-                        gallery.email, gallery.image_url, Json(gallery.additional_images),
-                        Json(gallery.artist_ids), gallery.active,
-                    )
-                    for gallery in seed
-                ],
-            )
+            with db.cursor() as cursor:
+                cursor.executemany(
+                    """
+                    INSERT INTO gallery_galleries (
+                        id, name, description, address, city, country, website, phone,
+                        email, image_url, additional_images, artist_ids, active
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """,
+                    [
+                        (
+                            gallery.id, gallery.name, gallery.description, gallery.address,
+                            gallery.city, gallery.country, gallery.website, gallery.phone,
+                            gallery.email, gallery.image_url, Json(gallery.additional_images),
+                            Json(gallery.artist_ids), gallery.active,
+                        )
+                        for gallery in seed
+                    ],
+                )
             db.execute(
                 "SELECT setval(pg_get_serial_sequence('gallery_galleries', 'id'), "
                 "COALESCE(MAX(id), 1), true) FROM gallery_galleries"
