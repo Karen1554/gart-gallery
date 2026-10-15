@@ -18,13 +18,19 @@ const { title, description = 'GART Gallery' } = Astro.props;
         <a href="/">Inicio</a><a href="/galleries">Galerías</a><a href="/artists">Artistas</a><a href="/works">Obras</a><a href="/about">Sobre nosotros</a><a href="/contact">Contacto</a>
       </nav>
       <div class="header-actions">
-        <a href="/works?q=" aria-label="Buscar">⌕</a><a href="/favorites" aria-label="Favoritos">♡</a><a href="/cart" aria-label="Carrito">🛒</a><a class="login" href="/login">Iniciar sesión</a>
+        <a href="/works?q=" aria-label="Buscar">⌕</a><a href="/favorites" aria-label="Favoritos">♡</a><a href="/cart" aria-label="Carrito">🛒</a><a class="login" href="/login" data-auth-link>Iniciar sesión</a>
       </div>
     </header>
     <main><slot /></main>
     <footer><div class="brand"><span class="brand-mark">G</span><span>GART<br /><b>GALLERY</b></span></div><p>Arte que inspira, espacios que conectan.</p><div class="footer-links"><a href="/about">Sobre nosotros</a><a href="/contact">Contacto</a><a href="/galleries">Galerías</a></div><small>© 2026 GART Gallery</small></footer>
   </body>
 </html>
+
+<script>
+  import { initializeAuthNavigation } from '../scripts/auth.js';
+
+  initializeAuthNavigation();
+</script>
 
 <style is:global>
   @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;1,500&display=swap');
