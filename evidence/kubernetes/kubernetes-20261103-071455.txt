@@ -1,0 +1,22 @@
+Fecha local: 2026-11-03T07:14:55.6931071-05:00
+Contexto Kubernetes: minikube
+
+=== Deployment ===
+NAME                    READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS   IMAGES                        SELECTOR
+gart-gallery-frontend   2/2     2            2           35s   frontend     gart-gallery-frontend:local   app.kubernetes.io/name=gart-gallery-frontend
+
+=== Pods ===
+NAME                                     READY   STATUS    RESTARTS   AGE   IP           NODE       NOMINATED NODE   READINESS GATES
+gart-gallery-frontend-694b4bd68d-ds74v   1/1     Running   0          36s   10.244.0.3   minikube   <none>           <none>
+gart-gallery-frontend-694b4bd68d-s4t4p   1/1     Running   0          36s   10.244.0.4   minikube   <none>           <none>
+
+=== Service y endpoints ===
+NAME                            TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE   SELECTOR
+service/gart-gallery-frontend   ClusterIP   10.106.210.11   <none>        80/TCP    36s   app.kubernetes.io/name=gart-gallery-frontend
+
+NAME                              ENDPOINTS                         AGE
+endpoints/gart-gallery-frontend   10.244.0.3:8080,10.244.0.4:8080   36s
+
+=== Comprobaciones HTTP ===
+Página principal: HTTP 200 - http://127.0.0.1:8080/
+Health check: HTTP 200 - http://127.0.0.1:8080/healthz
